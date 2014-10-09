@@ -131,7 +131,6 @@ else
       _B.Logger.addDebugPathLevel 'uRequire', config.debugLevel * 1 # cast to Number or NaN
 
     if config.verbose
-
       printVersions()
       l.verbose 'uRequire-cli called with cmdConfig=\n', config
 
@@ -139,7 +138,7 @@ else
       b =
         startDate: bundleBuilder?.build?.startDate or new Date()
         count: bundleBuilder?.build?.count or 0
-      if (doneValue is true) or (doneValue is undefined)
+      if (doneValue isnt false) or (not doneValue instanceof Error)
         l.verbose "uRequire-cli done() ##{b.count} successfully in #{(new Date() - b.startDate) / 1000 }secs."
       else
         l.er "uRequire-cli done() ##{b.count} with errors in #{(new Date() - b.startDate) / 1000 }secs."
