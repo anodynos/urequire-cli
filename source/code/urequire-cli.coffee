@@ -5,7 +5,7 @@ _ = (_B = require 'uberscore')._
 l = new _B.Logger "urequire-cli"
 fs = require 'fs'
 
-urequire = require('./localUrequire')
+urequire = require './localUrequire'
 
 printVersions = ->
   unless urequire
@@ -36,7 +36,7 @@ commander
   .option('-t, --template <template>', 'Template (AMD, UMD, nodejs), to override a `configFile` setting. Should use ONLY with `config`', undefined)
   .option('-O, --optimize', 'Pass through uglify2 while saving/optimizing - currently works only for `combined` template, using r.js/almond.', undefined)
   .option('-C, --continue', 'Dont bail out while processing (module processing/conversion errors)', undefined)
-  .option('-w, --watch', "Watch for file changes in `bundle.path` & reprocess them. Note: new dirs are ignored", undefined)
+  .option('-w, --watch [debounceWaitMs]', "Watch for file changes in `bundle.path` & rebuild them. `debounceWaitMs` is how many milliseconds to delay each new build, waiting for more file changes.", undefined)
   .option('-b, --bare', "Don't enclose AMD/UMD modules in Immediately Invoked Function Expression (safety wraper).", undefined)
   .option('-f, --filez', "NOT IMPLEMENTED (in CLI - use a config file or grunt-urequire). Process only modules/files in filters - comma seprated list/Array of Strings or Regexp's", toArray)
   .option('-j, --jsonOnly', 'NOT IMPLEMENTED. Output everything on stdout using json only. Usefull if you are building build tools', undefined)
@@ -136,13 +136,22 @@ else
 
     config.done = (doneValue)->
       b =
-        startDate: bundleBuilder?.build?.startDate or new Date()
-        count: bundleBuilder?.build?.count or 0
+        startDate: bb.build?.startDate or new Date()
+        count: bb.build?.count or 0
       if (doneValue isnt false) or (not doneValue instanceof Error)
-        l.verbose "uRequire-cli done() ##{b.count} successfully in #{(new Date() - b.startDate) / 1000 }secs."
+        doneMsg = -> "uRequire-cli done() ##{b.count} successfully in #{(new Date() - b.startDate) / 1000 }secs."
+        if bb?.l
+          if bb.l.deb 10
+            l.deb doneMsg()
+        else
+          l.verbose doneMsg()
       else
         l.er "uRequire-cli done() ##{b.count} with errors in #{(new Date() - b.startDate) / 1000 }secs."
 
+    # cast watch to number
+    config.watch = parseInt config.watch if not isNaN parseInt config.watch
+
     bb = new urequire.BundleBuilder [config]
-    bb.buildBundle()
-    bb.watch() if bb?.build?.watch
+    bb.buildBundle().finally ->
+      bb.watch bb.build.watch if bb?.build?.watch # bb.build.watch can be an integer `debounceWait`
+
