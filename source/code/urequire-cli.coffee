@@ -16,8 +16,11 @@ printVersions = ->
 commander = require 'commander'
 
 toArray = (val)->
-  _.map val.split(','), (v)->
-    if _.isString(v) then v.trim() else v
+  if _.isArray val
+    val
+  else
+    _.map val.split(','), (v)->
+      if _.isString(v) then v.trim() else v
 
 config = {}
 
