@@ -151,10 +151,17 @@ else
       else
         l.er "uRequire-cli done() ##{b.count} with errors in #{(new Date() - b.startDate) / 1000 }secs."
 
-    # cast watch to number
-    config.watch = parseInt config.watch if not isNaN parseInt config.watch
+    config.watch = parseInt config.watch if not isNaN parseInt config.watch # cast watch to number
 
     bb = new urequire.BundleBuilder [config]
-    bb.buildBundle().finally ->
-      bb.watch bb.build.watch if bb?.build?.watch # bb.build.watch can be an integer `debounceWait`
+    possPromise = bb.buildBundle()
 
+    # call watch, on different urequire versions
+    if (bb.build.watch is true) or
+       (bb.build.watch?.enabled is true) or
+       (_.isNumber bb.build.watch)
+
+      if _.isFunction possPromise?.finally
+        possPromise.finally -> bb.watch bb.build.watch
+      else
+        bb.watch bb.build.watch
